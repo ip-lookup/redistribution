@@ -1,4 +1,3 @@
-@ -0,0 +1,114 @@
 name: Update MaxMind Databases
 
 on:
