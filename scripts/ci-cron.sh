@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# This script requires env var $GITHUB_TOKEN to be set
+if [ -z ${GITHUB_TOKEN} ];
+then
+	echo "Need \$GITHUB_TOKEN";
+	exit 1
+fi
+
+echo "Installing filter-repo"...
+git config --global advice.detachedHead false
+git clone --depth 1 --branch v2.34.0 https://github.com/newren/git-filter-repo.git
+cd git-filter-repo
+sudo cp -a git-filter-repo $(git --exec-path)
+cd ..
+
+echo "Cloning a clean state..."
+git clone "https://github.com/${GITHUB_REPOSITORY}.git" clone
+cd clone
+git switch -C "${GITHUB_REF_NAME}"
+
+echo "Updating redistribution..."
+
+./scripts/update-databases.sh
+
+stat=$?
+
+# Process previous script exit code
+if [ $stat -eq 65 ];
+then
+	echo "Nothing to push"
+	exit 0
+elif [ $stat -ne 0 ]
+then
+	echo "Exited with ${stat}"
+	exit 1
+fi
+
+echo "New repo size:"
+du -sh .git
+
+if [ "${DRY_RUN}" == "true" ];
+then
+	echo "Dry run, exiting..."
+	exit 0
+fi
+
+echo "Pushing..."
+
+git remote add origin "https://username:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+git push origin --all --force
+stat=$?
+if [ $stat -ne 0 ]; then
+	exit 1
+fi
+git push origin --tags --force
+stat=$?
+if [ $stat -ne 0 ]; then
+	exit 1
+else
+	echo "Updates pushed to GitHub remote"
+	exit 0
+fi

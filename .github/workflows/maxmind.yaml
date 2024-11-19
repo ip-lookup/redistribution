@@ -7,14 +7,7 @@ on:
 
 jobs:
   update-maxmind-databases:
-    strategy:
-      matrix:
-        database:
-          - GeoLite2-ASN-CSV
-          - GeoLite2-Country-CSV
-          - GeoLite2-City-CSV
-      max-parallel: 1 # Otherwise we commit over each other
-    name: Update MaxMind ${{ matrix.database }} Database
+    name: Update MaxMind Databases
     runs-on: ubuntu-latest
     if: github.repository == 'ip-lookup/redistribution'
     permissions:
@@ -22,93 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install filter-repo
-        shell: bash
-        run: |
-          git pull
-          sudo apt-get update
-          sudo apt-get install -y git-filter-repo
-
-      - name: Download checksum file
-        shell: bash
-        run: |
-          curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=${{ matrix.database }}&license_key=${{ secrets.MAXMIND_LICENSE_KEY }}&suffix=zip.sha256" -o maxmind/${{ matrix.database }}.remote.zip.sha256
-
-      - name: Check if update is needed
-        id: check-update
-        shell: bash
-        run: |
-          if [ -f "maxmind/${{ matrix.database }}.zip.sha256" ]; then
-            remote_sha=$(cat maxmind/${{ matrix.database }}.remote.zip.sha256 | awk '{ print $1 }')
-            local_sha=$(cat maxmind/${{ matrix.database }}.zip.sha256 | awk '{ print $1 }')
-
-            echo "Remote: $remote_sha"
-            echo "Local: $local_sha"
-
-            if [ "$remote_sha" == "$local_sha" ]; then
-              echo "No changes detected"
-              rm -f maxmind/${{ matrix.database }}.remote.zip.sha256
-              echo "needs_update=false" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-          fi
-          echo "needs_update=true" >> $GITHUB_OUTPUT
-
-      - name: Clean database file from git history
-        if: steps.check-update.outputs.needs_update == 'true'
-        shell: bash
-        run: |
-          git filter-repo --invert-paths --path-glob "maxmind/${{ matrix.database }}.zip" --force
-          git for-each-ref --format="delete %(refname)" refs/original | git update-ref --stdin
-          git reflog expire --expire=now --all
-          git gc --prune=now
-
-          git remote add origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
-          git remote -v
-
-      - name: Download database
-        if: steps.check-update.outputs.needs_update == 'true'
-        shell: bash
-        run: |
-          curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=${{ matrix.database }}&license_key=${{ secrets.MAXMIND_LICENSE_KEY }}&suffix=zip" -o maxmind/${{ matrix.database }}.remote.zip
-
-      - name: Verify checksum
-        if: steps.check-update.outputs.needs_update == 'true'
-        shell: bash
-        run: |
-          remote_sha=$(cat maxmind/${{ matrix.database }}.remote.zip.sha256 | awk '{ print $1 }')
-          downloaded_sha=$(shasum -a 256 maxmind/${{ matrix.database }}.remote.zip | awk '{ print $1 }')
-
-          echo "Remote: $remote_sha"
-          echo "Downloaded: $downloaded_sha"
-          if [ "$remote_sha" != "$downloaded_sha" ]; then
-            echo "Checksum mismatch! Exiting..."
-            exit 1
-          fi
-
-          # Rewrite the checksum file to match the downloaded file
-          rm -f maxmind/${{ matrix.database }}.remote.zip.sha256
-          echo "$downloaded_sha" > maxmind/${{ matrix.database }}.remote.zip.sha256
-
-          echo "Checksum verified successfully"
-
-          # Push the history changes
-          git push --force --all
-          git push --force --tags
-
-      - name: Replace files
-        if: steps.check-update.outputs.needs_update == 'true'
-        shell: bash
-        run: |
-          rm -f maxmind/${{ matrix.database }}.zip
-          rm -f maxmind/${{ matrix.database }}.zip.sha256
-
-          mv maxmind/${{ matrix.database }}.remote.zip maxmind/${{ matrix.database }}.zip
-          mv maxmind/${{ matrix.database }}.remote.zip.sha256 maxmind/${{ matrix.database }}.zip.sha256
-
-      - name: Commit changes
-        if: steps.check-update.outputs.needs_update == 'true'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: update MaxMind ${{ matrix.database }} database"
-          file_pattern: "maxmind/${{ matrix.database }}.zip maxmind/${{ matrix.database }}.zip.sha256"
+      - run: ./scripts/ci-cron.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
