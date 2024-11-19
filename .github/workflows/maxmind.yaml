@@ -68,9 +68,8 @@ jobs:
       - name: Verify checksum
         if: steps.check-update.outputs.needs_update == 'true'
         shell: bash
-        env:
-          remote_sha: ${{ steps.check-update.outputs.remote_sha }}
         run: |
+          remote_sha=${{ steps.check-update.outputs.remote_sha }}
           downloaded_sha=$(shasum -a 256 maxmind/${{ matrix.database }}.remote.zip | awk '{ print $1 }')
 
           echo "Remote: $remote_sha"
