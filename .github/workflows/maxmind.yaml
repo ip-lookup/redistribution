@@ -46,6 +46,7 @@ jobs:
             fi
           fi
           echo "needs_update=true" >> $GITHUB_OUTPUT
+          echo "remote_sha=$remote_sha" >> $GITHUB_OUTPUT
 
       - name: Clean database file from git history
         if: steps.check-update.outputs.needs_update == 'true'
@@ -67,8 +68,9 @@ jobs:
       - name: Verify checksum
         if: steps.check-update.outputs.needs_update == 'true'
         shell: bash
+        env:
+          remote_sha: ${{ steps.check-update.outputs.remote_sha }}
         run: |
-          remote_sha=$(cat maxmind/${{ matrix.database }}.remote.zip.sha256 | awk '{ print $1 }')
           downloaded_sha=$(shasum -a 256 maxmind/${{ matrix.database }}.remote.zip | awk '{ print $1 }')
 
           echo "Remote: $remote_sha"
@@ -78,8 +80,6 @@ jobs:
             exit 1
           fi
 
-          # Rewrite the checksum file to match the downloaded file
-          rm -f maxmind/${{ matrix.database }}.remote.zip.sha256
           echo "$downloaded_sha" > maxmind/${{ matrix.database }}.remote.zip.sha256
 
           echo "Checksum verified successfully"
