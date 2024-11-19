@@ -4,6 +4,15 @@ inputs:
   glob_pattern:
     description: "Glob pattern to remove from the Git history."
     required: true
+  github_token:
+    description: "GitHub token to use for the action."
+    required: true
+  ref_name:
+    description: "Git ref name to use for the action."
+    required: true
+  repository:
+    description: "GitHub repository to use for the action."
+    required: true
 runs:
   using: composite
   steps:
@@ -15,7 +24,7 @@ runs:
     - name: Install git-filter-repo
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
         git config --global advice.detachedHead false
         git clone --depth 1 --branch v2.34.0 https://github.com/newren/git-filter-repo.git
@@ -26,21 +35,21 @@ runs:
     - name: Clone Clean State
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
-        git clone "https://github.com/${GITHUB_REPOSITORY}.git" clone
+        git clone "https://github.com/${{ inputs.repository }}.git" clone
         cd clone
-        git switch -C "${GITHUB_REF_NAME}"
+        git switch -C "${{ inputs.ref_name }}"
 
     - name: Remove Glob Pattern from History
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
         echo "Before:"
         du -sh .git
 
-        git filter-repo --invert-paths --path-glob "${{ github.event.inputs.glob_pattern }}" --force
+        git filter-repo --invert-paths --path-glob "${{ inputs.glob_pattern }}" --force
         git for-each-ref --format="delete %(refname)" refs/original | git update-ref --stdin
         git reflog expire --expire=now --all
         git gc --prune=now
@@ -51,7 +60,7 @@ runs:
     - name: Force Push Rewritten History
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
         git push --force --all
         git push --force --tags

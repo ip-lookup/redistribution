@@ -52,6 +52,9 @@ jobs:
         uses: ./.github/actions/remove-git-history
         with:
           glob_pattern: "maxmind/${{ matrix.database }}.zip"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ref_name: ${{ github.ref_name }}
+          repository: ${{ github.repository }}
 
       - name: Pull latest changes
         env:
