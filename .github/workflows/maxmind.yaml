@@ -31,8 +31,9 @@ jobs:
         id: check-update
         shell: bash
         run: |
+          remote_sha=$(cat maxmind/${{ matrix.database }}.remote.zip.sha256 | awk '{ print $1 }')
+
           if [ -f "maxmind/${{ matrix.database }}.zip.sha256" ]; then
-            remote_sha=$(cat maxmind/${{ matrix.database }}.remote.zip.sha256 | awk '{ print $1 }')
             local_sha=$(cat maxmind/${{ matrix.database }}.zip.sha256 | awk '{ print $1 }')
 
             echo "Remote: $remote_sha"
@@ -45,6 +46,7 @@ jobs:
               exit 0
             fi
           fi
+
           echo "needs_update=true" >> $GITHUB_OUTPUT
           echo "remote_sha=$remote_sha" >> $GITHUB_OUTPUT
 
