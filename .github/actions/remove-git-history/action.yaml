@@ -62,5 +62,6 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
-        git push --force --all
-        git push --force --tags
+        git remote add origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ inputs.repository }}
+        git push origin --all --force
+        git push origin --tags --force
