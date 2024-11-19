@@ -56,11 +56,7 @@ jobs:
           ref_name: ${{ github.ref_name }}
           repository: ${{ github.repository }}
 
-      - name: Pull latest changes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git pull --rebase
+      - uses: actions/checkout@v4
 
       - name: Download database
         if: steps.check-update.outputs.needs_update == 'true'
