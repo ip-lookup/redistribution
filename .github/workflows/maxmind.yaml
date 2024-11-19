@@ -60,7 +60,10 @@ jobs:
           repository: ${{ github.repository }}
 
       - uses: actions/checkout@v4
+        if: steps.check-update.outputs.needs_update == 'true'
+
       - name: Pull latest changes
+        if: steps.check-update.outputs.needs_update == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
