@@ -21,7 +21,7 @@ git switch -C "${GITHUB_REF_NAME}"
 
 echo "Updating redistribution..."
 
-./scripts/update-databases.sh
+./scripts/update-databases
 
 stat=$?
 

@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: ./scripts/ci-cron.sh
+      - run: ./scripts/ci-cron
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}

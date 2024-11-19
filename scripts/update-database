@@ -37,7 +37,7 @@ do
 
 	echo "Cleaning previous version from git history..."
 	cd ..
-	./scripts/clean-git-objects.sh ${edition}
+	./scripts/clean-git-objects ${edition}
 	stat=$?
 	if [ $stat -ne 0 ]
 	then
@@ -66,7 +66,7 @@ do
 
 	echo "Committing update..."
 	cd ..
-	./scripts/commit-database.sh ${edition}
+	./scripts/commit-database ${edition}
 	stat=$?
 	if [ $stat -ne 0 ]
 	then
