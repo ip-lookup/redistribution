@@ -46,6 +46,9 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
+        git branch --set-upstream-to=origin/${{ inputs.ref_name }} ${{ inputs.ref_name }}
+        git pull --rebase
+
         echo "Before:"
         du -sh .git
 
